@@ -10,11 +10,12 @@ class Room(models.Model):
         return self.name
 
 class Instructor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=100, default='New Instructor')
     department = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.user.get_full_name() or self.user.username
+        return self.name
 
 class Course(models.Model):
     code = models.CharField(max_length=20, unique=True)

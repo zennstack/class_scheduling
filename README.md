@@ -1,62 +1,76 @@
 # Class Scheduling System
 
-A Django-based API backend for managing class schedules. It features conflict detection to prevent scheduling overlapping classes in the same room or assigning overlapping classes to the same instructor.
+A full-stack web application for orchestrating academic class schedules. It features a modern React-based dashboard and a Django API backend with intelligent conflict detection to prevent overlapping classes in the same room or assigning multiple classes to the same instructor.
+
+## Tech Stack
+- **Backend:** Django, Django REST Framework, SimpleJWT, Jazzmin
+- **Frontend:** React, Vite, Lucide-React, React-Big-Calendar
 
 ## Setup Instructions
 
-Follow these instructions to get the backend running locally.
+This project consists of two parts: the Django API backend and the React frontend. You will need to run both simultaneously.
 
-### 1. Create a Virtual Environment
-It's recommended to run this project inside a Python virtual environment to keep dependencies isolated.
+---
 
-**Windows:**
-```bash
-python -m venv venv
-.\venv\Scripts\activate
-```
+### Backend Setup (Django)
 
-**macOS/Linux:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+1. **Create a Virtual Environment**
+   ```bash
+   python -m venv venv
+   .\venv\Scripts\activate  # Windows
+   source venv/bin/activate # macOS/Linux
+   ```
 
-### 2. Install Dependencies
-Once your virtual environment is active, install the required packages:
+2. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```bash
-pip install -r requirements.txt
-```
+3. **Apply Migrations**
+   ```bash
+   # Make sure you are in the directory containing manage.py
+   python manage.py migrate
+   ```
 
-### 3. Apply Migrations
-Set up your local SQLite database with the necessary tables:
+4. **Run the Server**
+   ```bash
+   python manage.py runserver
+   ```
+   The API will be available at `http://localhost:8000/api/`
 
-```bash
-cd ClassScheduling
-python manage.py migrate
-```
+---
 
-### 4. Create a Superuser (Optional but Recommended)
-To access the Django Admin panel at `http://127.0.0.1:8000/admin`:
+### Frontend Setup (React)
 
-```bash
-python manage.py createsuperuser
-```
+1. **Navigate to the frontend directory**
+   ```bash
+   cd frontend
+   ```
 
-### 5. Run the Server
-Start the local development server:
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-python manage.py runserver
-```
+3. **Run the Development Server**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:5173/`
 
-The API will now be available at `http://127.0.0.1:8000/api/`
+---
 
 ## Testing the API
-You can run the provided test script to quickly verify that the endpoints and conflict detection logic are working correctly. 
-
-Open a **new terminal window** (keep the server running in the first one), activate your virtual environment, and run:
+You can run the provided test script to verify that the endpoints and conflict detection logic are working correctly:
 
 ```bash
 python test_api.py
 ```
+
+## Features
+- **Scheduling Hub:** Central dashboard to manage all class schedules.
+- **Resource Management:** Add and edit Rooms, Instructors, and Courses.
+- **Calendar View:** A visual timetable of all scheduled activities.
+- **Conflict Detection:** Automatic validation for room and instructor availability.
+- **User Profiles:** Manage account details and security settings.
+- **Admin Panel:** Beautifully designed Django admin interface via Jazzmin.

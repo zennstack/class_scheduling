@@ -13,14 +13,18 @@ class RoomSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class InstructorSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), source='user', write_only=True
+    user_details = UserSerializer(source='user', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False, allow_null=True
     )
 
     class Meta:
         model = Instructor
-        fields = ['id', 'user', 'user_id', 'department']
+        fields = ['id', 'user', 'user_details', 'name', 'department']
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
 
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
