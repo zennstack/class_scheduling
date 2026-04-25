@@ -5,10 +5,11 @@ A full-stack web application for orchestrating academic class schedules. It feat
 ## Tech Stack
 - **Backend:** Django, Django REST Framework, SimpleJWT, Jazzmin
 - **Frontend:** React, Vite, Lucide-React, React-Big-Calendar
+- **Mobile:** Capacitor (Native Android/iOS), Vite PWA
 
 ## Setup Instructions
 
-This project consists of two parts: the Django API backend and the React frontend. You will need to run both simultaneously.
+This project consists of three parts: the Django API backend, the React frontend, and the Capacitor-based mobile application.
 
 ---
 
@@ -60,6 +61,28 @@ This project consists of two parts: the Django API backend and the React fronten
 
 ---
 
+### Mobile App Setup (Android)
+
+1. **Build the web assets**
+   ```bash
+   npm run build
+   ```
+
+2. **Sync with Android Studio**
+   ```bash
+   npx cap sync
+   ```
+
+3. **Open and Run**
+   ```bash
+   npx cap open android
+   ```
+   *Note: This will open the project in Android Studio. From there, click the "Run" button to deploy to an emulator or physical device.*
+
+---
+
+---
+
 ## Testing the API
 You can run the provided test script to verify that the endpoints and conflict detection logic are working correctly:
 
@@ -68,9 +91,12 @@ python test_api.py
 ```
 
 ## Features
+- **Mobile Optimized:** Fully responsive UI with bottom-navigation and native-style modals.
+- **Installable (PWA):** Can be installed on home screens via the browser.
+- **Native Wrapper:** Ready for App Store/Play Store deployment via Capacitor.
 - **Scheduling Hub:** Central dashboard to manage all class schedules.
 - **Resource Management:** Add and edit Rooms, Instructors, and Courses.
-- **Calendar View:** A visual timetable of all scheduled activities.
+- **Calendar View:** A visual timetable with responsive Day/Week views.
 - **Conflict Detection:** Automatic validation for room and instructor availability.
-- **User Profiles:** Manage account details and security settings.
+- **User Profiles:** Manage account details and logout on mobile.
 - **Admin Panel:** Beautifully designed Django admin interface via Jazzmin.

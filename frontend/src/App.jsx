@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import MobileNav from './components/MobileNav';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -19,6 +20,7 @@ const ProtectedRoute = ({ children }) => {
       <main className="main-content">
         {children}
       </main>
+      <MobileNav />
     </div>
   );
 };

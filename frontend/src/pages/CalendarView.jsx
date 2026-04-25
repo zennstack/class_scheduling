@@ -14,6 +14,15 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 
 export default function CalendarView() {
   const [events, setEvents] = useState([]);
+  const [view, setView] = useState(window.innerWidth <= 768 ? 'day' : 'work_week');
+
+  useEffect(() => {
+    const handleResize = () => {
+      setView(window.innerWidth <= 768 ? 'day' : 'work_week');
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -96,7 +105,8 @@ export default function CalendarView() {
           events={events}
           startAccessor="start"
           endAccessor="end"
-          defaultView="work_week"
+          view={view}
+          onView={(newView) => setView(newView)}
           views={['work_week', 'day', 'agenda']}
           components={{
             event: EventComponent

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { User, Mail, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [passwordData, setPasswordData] = useState({ old_password: '', new_password: '', confirm_password: '' });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -41,32 +43,33 @@ export default function Profile() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('username');
+    navigate('/login');
+  };
+
   if (loading) return <div className="text-muted">Loading profile...</div>;
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div className="profile-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <h1 className="text-gradient" style={{ fontSize: '2.25rem', marginBottom: '2rem' }}>User Profile</h1>
       
-      <div className="grid-3" style={{ gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-        <div className="card" style={{ textAlign: 'center', height: 'fit-content' }}>
-          <div style={{ 
-            width: '100px', 
-            height: '100px', 
-            borderRadius: '50%', 
-            background: 'rgba(79, 70, 229, 0.1)', 
-            color: 'var(--primary)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            margin: '0 auto 1.5rem' 
-          }}>
+      <div className="profile-grid">
+        <div className="card profile-info-card">
+          <div className="profile-avatar">
             <User size={48} />
           </div>
           <h2 style={{ marginBottom: '0.25rem' }}>{profile?.username}</h2>
-          <p className="text-muted">{profile?.email}</p>
+          <p className="text-muted" style={{ marginBottom: '2rem' }}>{profile?.email}</p>
+          
+          <button onClick={handleLogout} className="btn btn-outline danger-hover" style={{ width: '100%', gap: '0.5rem' }}>
+            <LogOut size={18} /> Logout
+          </button>
         </div>
 
-        <div className="card">
+        <div className="card profile-settings-card">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
             <Lock size={20} /> Change Password
           </h3>
