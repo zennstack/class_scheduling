@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Plus, Edit2, Trash2, MapPin, Users, BookOpen, X } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Resources() {
   const [activeTab, setActiveTab] = useState('rooms');
@@ -10,6 +11,7 @@ export default function Resources() {
   const [formData, setFormData] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState([]);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
 
   useEffect(() => {
     fetchData();
@@ -54,10 +56,10 @@ export default function Resources() {
     setFormData({});
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirm.id) return;
     try {
-      await api.delete(`/${activeTab}/${id}/`);
+      await api.delete(`/${activeTab}/${deleteConfirm.id}/`);
       fetchData();
     } catch (err) {
       console.error('Failed to delete', err);
@@ -190,7 +192,7 @@ export default function Resources() {
                     <button className="btn-icon" onClick={() => handleOpenModal(item)} title="Edit">
                       <Edit2 size={16} />
                     </button>
-                    <button className="btn-icon danger" onClick={() => handleDelete(item.id)} title="Delete">
+                    <button className="btn-icon danger" onClick={() => setDeleteConfirm({ isOpen: true, id: item.id })} title="Delete">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -306,6 +308,14 @@ export default function Resources() {
 
       {renderTable()}
       {renderModal()}
+      
+      <ConfirmModal 
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+        onConfirm={handleDelete}
+        title={`Delete ${activeTab.slice(0, -1)}`}
+        message={`Are you sure you want to delete this ${activeTab.slice(0, -1)}? This will remove all associated data and cannot be undone.`}
+      />
     </div>
   );
 }

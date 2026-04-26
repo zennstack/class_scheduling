@@ -50,7 +50,7 @@ class ClassSchedule(models.Model):
         if self.start_time and self.end_time and self.start_time >= self.end_time:
             raise ValidationError({'end_time': 'End time must be after start time.'})
 
-        if not self.room_id or not self.day_of_week or not self.start_time or not self.end_time or not self.instructor_id:
+        if not all([self.room, self.day_of_week, self.start_time, self.end_time, self.instructor]):
             return
 
         # Check for room conflict
@@ -59,10 +59,14 @@ class ClassSchedule(models.Model):
             day_of_week=self.day_of_week,
             start_time__lt=self.end_time,
             end_time__gt=self.start_time
-        ).exclude(pk=self.pk)
+        )
+        if self.pk:
+            room_conflicts = room_conflicts.exclude(pk=self.pk)
 
         if room_conflicts.exists():
-            raise ValidationError({'room': f"Room {self.room.name} is already booked during this time."})
+            raise ValidationError({
+                'room': f"Room {self.room.name} is already booked for another class during this time slot."
+            })
 
         # Check for instructor conflict
         instructor_conflicts = ClassSchedule.objects.filter(
@@ -70,10 +74,14 @@ class ClassSchedule(models.Model):
             day_of_week=self.day_of_week,
             start_time__lt=self.end_time,
             end_time__gt=self.start_time
-        ).exclude(pk=self.pk)
+        )
+        if self.pk:
+            instructor_conflicts = instructor_conflicts.exclude(pk=self.pk)
 
         if instructor_conflicts.exists():
-            raise ValidationError({'instructor': f"Instructor {self.instructor} is already teaching during this time."})
+            raise ValidationError({
+                'instructor': f"Instructor {self.instructor.name} is already assigned to another class during this time slot."
+            })
 
     def __str__(self):
         return f"{self.course.code} in {self.room.name} on {self.day_of_week} ({self.start_time} - {self.end_time})"

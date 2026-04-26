@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../utils/api';
 import { Plus, Calendar, Clock, MapPin, User, Book, Trash2, Edit2, X, AlertCircle } from 'lucide-react';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function Home() {
   const [schedules, setSchedules] = useState([]);
@@ -16,6 +17,7 @@ export default function Home() {
   });
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
 
   useEffect(() => {
     fetchSchedules();
@@ -90,10 +92,10 @@ export default function Home() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this schedule?')) return;
+  const handleDelete = async () => {
+    if (!deleteConfirm.id) return;
     try {
-      await api.delete(`/schedules/${id}/`);
+      await api.delete(`/schedules/${deleteConfirm.id}/`);
       fetchSchedules();
     } catch (err) {
       console.error("Delete failed", err);
@@ -195,7 +197,7 @@ export default function Home() {
                   <td>
                     <div className="actions-row" style={{ justifyContent: 'flex-end' }}>
                       <button className="btn-icon" onClick={() => handleOpenModal(s)}><Edit2 size={16} /></button>
-                      <button className="btn-icon danger" onClick={() => handleDelete(s.id)}><Trash2 size={16} /></button>
+                      <button className="btn-icon danger" onClick={() => setDeleteConfirm({ isOpen: true, id: s.id })}><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -271,6 +273,14 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+      <ConfirmModal 
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+        onConfirm={handleDelete}
+        title="Delete Schedule"
+        message="Are you sure you want to delete this class schedule? This action cannot be undone."
+      />
     </div>
   );
 }
