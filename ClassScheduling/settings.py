@@ -151,11 +151,11 @@ SIMPLE_JWT = {
 
 # Jazzmin Settings
 JAZZMIN_SETTINGS = {
-    "site_title": "ClassSched Admin",
-    "site_header": "ClassSched",
-    "site_brand": "ClassSched Administration",
-    "welcome_sign": "Welcome to ClassSched Admin Dashboard",
-    "copyright": "ClassSched Ltd",
+    "site_title": "PlanClass Admin",
+    "site_header": "PlanClass",
+    "site_brand": "PlanClass Administration",
+    "welcome_sign": "Welcome to PlanClass Admin Dashboard",
+    "copyright": "PlanClass",
     "search_model": ["auth.User", "scheduling.Course"],
     "user_avatar": None,
     "topmenu_links": [

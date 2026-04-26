@@ -9,8 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Class Scheduling System',
-        short_name: 'Scheduling',
+        name: 'PlanClass',
+        short_name: 'PlanClass',
         description: 'Manage your classes and resources',
         theme_color: '#4f46e5',
         background_color: '#f8fafc',

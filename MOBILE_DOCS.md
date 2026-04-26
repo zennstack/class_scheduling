@@ -1,6 +1,6 @@
 # Mobile Implementation Guide (PlanClass)
 
-This document outlines the transition of the Class Scheduling system into a cross-platform mobile application.
+This document outlines the transition of the PlanClass system into a cross-platform mobile application.
 
 ## 📱 Phase 1: Progressive Web App (PWA) & Responsiveness
 

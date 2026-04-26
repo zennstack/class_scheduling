@@ -32,7 +32,7 @@ export default function Sidebar() {
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="nav-icon"><BookOpen size={24} /></div>
-        <span className="nav-text">ClassSched</span>
+        <span className="nav-text">PlanClass</span>
       </div>
       
       <div className="sidebar-nav">

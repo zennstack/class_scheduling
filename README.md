@@ -1,4 +1,4 @@
-# Class Scheduling System
+# PlanClass - Scheduling System
 
 A full-stack web application for orchestrating academic class schedules. It features a modern React-based dashboard and a Django API backend with intelligent conflict detection to prevent overlapping classes in the same room or assigning multiple classes to the same instructor.
 

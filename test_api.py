@@ -3,7 +3,7 @@ import requests
 BASE_URL = "http://127.0.0.1:8000/api"
 
 def test_api():
-    print("--- Class Scheduling API Test ---")
+    print("--- PlanClass API Test ---")
 
     print("\n1. Registering an Instructor User...")
     user_data = {
