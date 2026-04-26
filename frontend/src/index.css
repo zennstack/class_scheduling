@@ -25,6 +25,19 @@ body {
   background-color: var(--bg);
   color: var(--text-main);
   line-height: 1.5;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --sidebar-w-collapsed: 72px;
+  --sidebar-w-expanded: 240px;
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
 }
 
 a {

@@ -5,9 +5,11 @@ import MobileNav from './components/MobileNav';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
-import CalendarView from './pages/CalendarView';
 import Resources from './pages/Resources';
+
 import Profile from './pages/Profile';
+import ScheduleManager from './pages/ScheduleManager';
+
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('access_token');
@@ -26,16 +28,26 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default function App() {
+  React.useEffect(() => {
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
+  }, []);
+
   return (
     <BrowserRouter>
+
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
         <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
+
+        <Route path="/manage" element={<ProtectedRoute><ScheduleManager /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
       </Routes>
     </BrowserRouter>
   );

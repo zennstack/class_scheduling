@@ -9,14 +9,16 @@ const MobileNav = () => {
         <Home size={24} />
         <span>Home</span>
       </NavLink>
-      <NavLink to="/calendar" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+      <NavLink to="/manage" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
         <Calendar size={24} />
-        <span>Calendar</span>
+        <span>Hub</span>
       </NavLink>
       <NavLink to="/resources" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
         <Layers size={24} />
         <span>Resources</span>
       </NavLink>
+
+
       <NavLink to="/profile" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
         <User size={24} />
         <span>Profile</span>

@@ -22,11 +22,13 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { path: '/', icon: <Home size={20} />, label: 'Home' },
-    { path: '/calendar', icon: <CalendarDays size={20} />, label: 'Calendar' },
+    { path: '/', icon: <Home size={20} />, label: 'Dashboard' },
+    { path: '/manage', icon: <CalendarDays size={20} />, label: 'Scheduling Hub' },
     { path: '/resources', icon: <BookOpen size={20} />, label: 'Resources' },
-    { path: '/profile', icon: <User size={20} />, label: 'User Profile' },
+    { path: '/profile', icon: <User size={20} />, label: 'Profile' },
   ];
+
+
 
   return (
     <div className="sidebar">
