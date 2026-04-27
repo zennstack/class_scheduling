@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import (
 from .views import (
     RegisterView, LogoutView, ProfileView, ChangePasswordView,
     UserViewSet, RoomViewSet, InstructorViewSet, 
-    CourseViewSet, ClassScheduleViewSet, HealthCheckView
+    CourseViewSet, ClassScheduleViewSet, HealthCheckView, CreateFirstAdminView
 )
 
 router = DefaultRouter()
@@ -25,4 +25,5 @@ urlpatterns = [
     path('auth/profile/', ProfileView.as_view(), name='profile'),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('', include(router.urls)),
+    path('setup-admin/', CreateFirstAdminView.as_view(), name='setup-admin'),
     path('health/', HealthCheckView.as_view(), name='health'),]

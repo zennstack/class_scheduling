@@ -24,7 +24,15 @@ class IsAdminOrReadOnly(BasePermission):
 class HealthCheckView(APIView):
     permission_classes = []
     def get(self, request):
-        return Response({"status": "ok"}, status=status.HTTP_200_OK)
+        return Response({"status": "ok", "message": "API is running"}, status=status.HTTP_200_OK)
+
+class CreateFirstAdminView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        if not User.objects.filter(is_superuser=True).exists():
+            User.objects.create_superuser('admin', 'admin@example.com', 'admin')
+            return Response({"message": "Admin 'admin' with password 'admin' created successfully."}, status=status.HTTP_201_CREATED)
+        return Response({"error": "An admin account already exists. For security, this setup endpoint is disabled."}, status=status.HTTP_403_FORBIDDEN)
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
