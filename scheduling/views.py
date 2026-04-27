@@ -1,4 +1,6 @@
-from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -13,7 +15,10 @@ from .serializers import (
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 
-class RegisterView(APIView):
+class HealthCheckView(APIView):
+    permission_classes = []
+    def get(self, request):
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)
     permission_classes = [AllowAny]
 
     def post(self, request):
