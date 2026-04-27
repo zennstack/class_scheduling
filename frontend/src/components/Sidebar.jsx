@@ -33,7 +33,9 @@ export default function Sidebar() {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <div className="nav-icon"><BookOpen size={24} /></div>
+        <div className="nav-icon">
+          <img src="/logo.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+        </div>
         <span className="nav-text">PlanClass</span>
       </div>
       

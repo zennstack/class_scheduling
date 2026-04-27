@@ -23,6 +23,9 @@ export default function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="PlanClass Logo" style={{ width: '64px', height: '64px', borderRadius: '12px' }} />
+        </div>
         <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Welcome Back</h2>
         {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center' }}>{error}</div>}
         <form onSubmit={handleLogin}>
