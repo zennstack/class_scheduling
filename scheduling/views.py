@@ -1,9 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission, SAFE_METHODS
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,10 +15,18 @@ from .serializers import (
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 
+class IsAdminOrReadOnly(BasePermission):
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user and request.user.is_staff
+
 class HealthCheckView(APIView):
     permission_classes = []
     def get(self, request):
         return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -77,18 +85,22 @@ class ChangePasswordView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class RoomViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
 
 class InstructorViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     queryset = Instructor.objects.all()
     serializer_class = InstructorSerializer
 
 class CourseViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 
 class ClassScheduleViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     queryset = ClassSchedule.objects.all()
     serializer_class = ClassScheduleSerializer
 

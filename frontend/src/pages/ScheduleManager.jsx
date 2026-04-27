@@ -7,7 +7,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { Calendar, Clock, MapPin, User, Book, Edit3, Search, LayoutGrid, List, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Book, Edit3, Search, LayoutGrid, List, Info, Plus } from 'lucide-react';
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -15,7 +15,9 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 export default function ScheduleManager() {
   const [schedules, setSchedules] = useState([]);
   const [resources, setResources] = useState({ rooms: [], instructors: [], courses: [] });
+  const [isStaff, setIsStaff] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
   const [formData, setFormData] = useState({
     course: '',
     room: '',
@@ -46,16 +48,26 @@ export default function ScheduleManager() {
 
   const fetchResources = async () => {
     try {
-      const [rooms, inst, courses] = await Promise.all([
-        api.get('/rooms/'), api.get('/instructors/'), api.get('/courses/')
+      const [rooms, inst, courses, profileRes] = await Promise.all([
+        api.get('/rooms/'), api.get('/instructors/'), api.get('/courses/'), api.get('/auth/profile/')
       ]);
       setResources({ rooms: rooms.data, instructors: inst.data, courses: courses.data });
+      setIsStaff(profileRes.data.is_staff);
     } catch (err) {
       console.error("Failed to load resources", err);
     }
   };
 
+  const handleAddClick = () => {
+    setModalMode('add');
+    setEditingId(null);
+    setFormData({ course: '', room: '', instructor: '', day_of_week: 'MON', start_time: '08:00', end_time: '09:00' });
+    setError('');
+    setIsModalOpen(true);
+  };
+
   const handleEditClick = (sched) => {
+    setModalMode('edit');
     setEditingId(sched.id);
     setFormData({
       course: sched.course.id,
@@ -73,7 +85,11 @@ export default function ScheduleManager() {
     e.preventDefault();
     setError('');
     try {
-      await api.put(`/schedules/${editingId}/`, formData);
+      if (modalMode === 'add') {
+        await api.post('/schedules/', formData);
+      } else {
+        await api.put(`/schedules/${editingId}/`, formData);
+      }
       setIsModalOpen(false);
       fetchSchedules();
     } catch (err) {
@@ -140,8 +156,8 @@ export default function ScheduleManager() {
           <p className="text-muted">Manage assignments and view the interactive timetable.</p>
         </div>
         
-        <div className="flex gap-4 items-center">
-          <div className="table-container" style={{ padding: '0.25rem', display: 'flex', gap: '2px', border: 'none' }}>
+        <div className="header-actions flex gap-4 items-center">
+          <div className="view-toggle" style={{ padding: '0.25rem', display: 'flex', gap: '2px', border: '1px solid var(--border)', borderRadius: '8px' }}>
              <button 
               onClick={() => setViewMode('grid')}
               className={`btn-icon ${viewMode === 'grid' ? 'active' : ''}`}
@@ -157,6 +173,11 @@ export default function ScheduleManager() {
               <List size={20} />
             </button>
           </div>
+          {isStaff && (
+            <button onClick={handleAddClick} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+              <Plus size={18} /> Add Schedule
+            </button>
+          )}
         </div>
       </div>
 
@@ -178,11 +199,13 @@ export default function ScheduleManager() {
           <div className="grid-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
             {filteredSchedules.map((sched) => (
               <div key={sched.id} className="card stat-card" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '1.25rem', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
-                  <button onClick={() => handleEditClick(sched)} className="btn-icon">
-                    <Edit3 size={16} />
-                  </button>
-                </div>
+                {isStaff && (
+                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
+                    <button onClick={() => handleEditClick(sched)} className="btn-icon">
+                      <Edit3 size={16} />
+                    </button>
+                  </div>
+                )}
                 <div className="badge badge-primary" style={{ marginBottom: '0.75rem' }}>{sched.course.code}</div>
                 <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', paddingRight: '2rem' }}>{sched.course.name}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', fontSize: '0.85rem' }}>
@@ -193,13 +216,15 @@ export default function ScheduleManager() {
                     <MapPin size={14} className="text-primary" /> Room: {sched.room.name}
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleEditClick(sched)}
-                  className="btn btn-outline" 
-                  style={{ width: '100%', marginTop: '1.25rem', fontSize: '0.8rem', padding: '0.5rem' }}
-                >
-                  Quick Reassign
-                </button>
+                {isStaff && (
+                  <button 
+                    onClick={() => handleEditClick(sched)}
+                    className="btn btn-outline" 
+                    style={{ width: '100%', marginTop: '1.25rem', fontSize: '0.8rem', padding: '0.5rem' }}
+                  >
+                    Quick Reassign
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -212,7 +237,7 @@ export default function ScheduleManager() {
                   <th>Instructor</th>
                   <th>Location</th>
                   <th>Time Slot</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  {isStaff && <th style={{ textAlign: 'right' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -225,11 +250,13 @@ export default function ScheduleManager() {
                     <td>{sched.instructor.name}</td>
                     <td>{sched.room.name}</td>
                     <td>{sched.day_of_week} {sched.start_time.slice(0, 5)}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button onClick={() => handleEditClick(sched)} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }}>
-                        Edit
-                      </button>
-                    </td>
+                    {isStaff && (
+                      <td style={{ textAlign: 'right' }}>
+                        <button onClick={() => handleEditClick(sched)} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }}>
+                          Edit
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -259,6 +286,7 @@ export default function ScheduleManager() {
             event: EventComponent
           }}
           onSelectEvent={(event) => {
+            if (!isStaff) return;
             const sched = schedules.find(s => s.id === event.id);
             if (sched) handleEditClick(sched);
           }}
@@ -271,15 +299,33 @@ export default function ScheduleManager() {
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 style={{ margin: 0 }}>Assign Resources</h2>
+              <h2 style={{ margin: 0 }}>{modalMode === 'add' ? 'Add New Schedule' : 'Assign Resources'}</h2>
               <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             </div>
             
             <p className="text-muted mb-4" style={{ fontSize: '0.9rem' }}>
-              Modify the assignment for <strong>{schedules.find(s => s.id === editingId)?.course.name}</strong>.
+              {modalMode === 'add'
+                ? 'Create a new schedule entry by filling in all fields below.'
+                : <>Modify the assignment for <strong>{schedules.find(s => s.id === editingId)?.course.name}</strong>.</>}
             </p>
 
             <form onSubmit={handleSubmit}>
+              {modalMode === 'add' && (
+                <div className="form-group">
+                  <label className="form-label">Course</label>
+                  <select
+                    className="form-input"
+                    value={formData.course}
+                    onChange={e => setFormData({...formData, course: e.target.value})}
+                    required
+                  >
+                    <option value="">Select Course</option>
+                    {resources.courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Instructor</label>
                 <select 
@@ -354,7 +400,9 @@ export default function ScheduleManager() {
 
               <div className="flex gap-4">
                 <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>Update Assignment</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>
+                  {modalMode === 'add' ? 'Create Schedule' : 'Update Assignment'}
+                </button>
               </div>
             </form>
           </div>

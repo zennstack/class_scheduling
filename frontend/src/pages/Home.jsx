@@ -25,6 +25,7 @@ export default function Home() {
   const [todayClasses, setTodayClasses] = useState([]);
   const [recentSchedules, setRecentSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isStaff, setIsStaff] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -33,11 +34,12 @@ export default function Home() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [schedules, rooms, instructors, courses] = await Promise.all([
+      const [schedules, rooms, instructors, courses, profile] = await Promise.all([
         api.get('/schedules/'),
         api.get('/rooms/'),
         api.get('/instructors/'),
-        api.get('/courses/')
+        api.get('/courses/'),
+        api.get('/auth/profile/')
       ]);
 
       setStats({
@@ -46,6 +48,7 @@ export default function Home() {
         instructors: instructors.data.length,
         courses: courses.data.length
       });
+      setIsStaff(profile.data.is_staff);
 
       // Filter for today's classes
       const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -177,15 +180,31 @@ export default function Home() {
           <div className="card bg-gradient" style={{ padding: '2rem' }}>
             <h3 style={{ color: 'white', marginBottom: '1.5rem' }}>Quick Actions</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
-                <PlusCircle size={20} /> Add New Course
-              </button>
-              <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
-                <DoorOpen size={20} /> Register New Room
-              </button>
-              <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
-                <Users size={20} /> Onboard Instructor
-              </button>
+              {isStaff ? (
+                <>
+                  <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
+                    <PlusCircle size={20} /> Add New Course
+                  </button>
+                  <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
+                    <DoorOpen size={20} /> Register New Room
+                  </button>
+                  <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
+                    <Users size={20} /> Onboard Instructor
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => navigate('/manage')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
+                    <Calendar size={20} /> Browse Schedules
+                  </button>
+                  <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
+                    <BookOpen size={20} /> View Course Catalog
+                  </button>
+                  <button onClick={() => navigate('/resources')} className="btn" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', justifyContent: 'flex-start', gap: '1rem' }}>
+                    <Users size={20} /> View Faculty Directory
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

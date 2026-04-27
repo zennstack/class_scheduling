@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 export default function Resources() {
   const [activeTab, setActiveTab] = useState('rooms');
   const [data, setData] = useState({ rooms: [], instructors: [], courses: [] });
+  const [isStaff, setIsStaff] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
@@ -20,10 +21,11 @@ export default function Resources() {
 
   const fetchData = async () => {
     try {
-      const [rm, inst, crs] = await Promise.all([
-        api.get('/rooms/'), api.get('/instructors/'), api.get('/courses/')
+      const [rm, inst, crs, profileRes] = await Promise.all([
+        api.get('/rooms/'), api.get('/instructors/'), api.get('/courses/'), api.get('/auth/profile/')
       ]);
       setData({ rooms: rm.data, instructors: inst.data, courses: crs.data });
+      setIsStaff(profileRes.data.is_staff);
     } catch (err) {
       console.error("Failed to load resources", err);
     }
@@ -144,7 +146,7 @@ export default function Resources() {
               {isRooms && <><th>Name</th><th>Capacity</th></>}
               {isInstructors && <><th>Full Name</th><th>Account</th><th>Department</th></>}
               {isCourses && <><th>Code</th><th>Name</th></>}
-              <th style={{width: '100px', textAlign: 'right'}}>Actions</th>
+              {isStaff && <th style={{width: '100px', textAlign: 'right'}}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -187,16 +189,18 @@ export default function Resources() {
                     <td>{item.name}</td>
                   </>
                 )}
-                <td>
-                  <div className="actions-row" style={{justifyContent: 'flex-end'}}>
-                    <button className="btn-icon" onClick={() => handleOpenModal(item)} title="Edit">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="btn-icon danger" onClick={() => setDeleteConfirm({ isOpen: true, id: item.id })} title="Delete">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
+                {isStaff && (
+                  <td>
+                    <div className="actions-row" style={{justifyContent: 'flex-end'}}>
+                      <button className="btn-icon" onClick={() => handleOpenModal(item)} title="Edit">
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="btn-icon danger" onClick={() => setDeleteConfirm({ isOpen: true, id: item.id })} title="Delete">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -286,9 +290,11 @@ export default function Resources() {
           <h1 className="text-gradient" style={{fontSize: '2.25rem', marginBottom: '0.5rem'}}>Resource Dashboard</h1>
           <p className="text-muted">Manage all your academic resources in one place.</p>
         </div>
-        <button className="btn btn-primary bg-gradient" onClick={() => handleOpenModal()} style={{gap: '0.5rem'}}>
-          <Plus size={18} /> Add New {activeTab.slice(0, -1)}
-        </button>
+        {isStaff && (
+          <button className="btn btn-primary bg-gradient" onClick={() => handleOpenModal()} style={{gap: '0.5rem'}}>
+            <Plus size={18} /> Add New {activeTab.slice(0, -1)}
+          </button>
+        )}
       </div>
 
       {renderStats()}

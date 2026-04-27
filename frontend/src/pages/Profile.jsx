@@ -140,7 +140,7 @@ export default function Profile() {
             <Mail size={16} /> {profile?.email}
           </p>
           
-          <div className="flex justify-center gap-8 mt-6">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1.5rem' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: '1.25rem' }}>{stats.schedules}</div>
               <div className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'uppercase' }}>Schedules</div>
@@ -158,7 +158,7 @@ export default function Profile() {
         {/* Settings Groups */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
           <div className="card">
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '2' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Monitor size={18} className="text-primary" /> App Appearance
             </h3>
             
