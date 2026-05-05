@@ -17,14 +17,7 @@ services:
         fromDatabase:
           name: class-scheduling-db
           property: connectionString
-      - key: FRONTEND_URL
-        sync: false
-      - key: BREVO_SMTP_USER
-        sync: false
-      - key: BREVO_SMTP_PASSWORD
-        sync: false
-      - key: DEFAULT_FROM_EMAIL
-        sync: false
+
 
 databases:
   - name: class-scheduling-db
