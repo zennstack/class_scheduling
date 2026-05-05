@@ -7,7 +7,8 @@ from rest_framework_simplejwt.views import (
 from .views import (
     RegisterView, LogoutView, ProfileView, ChangePasswordView,
     UserViewSet, RoomViewSet, InstructorViewSet, 
-    CourseViewSet, ClassScheduleViewSet, HealthCheckView, CreateFirstAdminView
+    CourseViewSet, ClassScheduleViewSet, HealthCheckView, CreateFirstAdminView,
+    ActivateAccountView
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ router.register(r'schedules', ClassScheduleViewSet)
 
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
+    path('auth/activate/<str:uidb64>/<str:token>/', ActivateAccountView.as_view(), name='activate'),
     path('auth/login/', TokenObtainPairView.as_view(), name='login'),
     path('auth/login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),

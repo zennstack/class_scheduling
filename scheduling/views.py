@@ -34,6 +34,12 @@ class CreateFirstAdminView(APIView):
             return Response({"message": "Admin 'admin' with password 'admin' created successfully."}, status=status.HTTP_201_CREATED)
         return Response({"error": "An admin account already exists. For security, this setup endpoint is disabled."}, status=status.HTTP_403_FORBIDDEN)
 
+import os
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -42,14 +48,58 @@ class RegisterView(APIView):
         password = request.data.get('password')
         email = request.data.get('email', '')
 
-        if not username or not password:
-            return Response({'error': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not username or not password or not email:
+            return Response({'error': 'Username, email, and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Username already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Email already registered.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(username=username, password=password, email=email)
-        return Response({'message': 'User registered successfully.', 'user': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
+        user.is_active = False # require email verification
+        user.save()
+
+        # Generate token for email verification
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+        activation_link = f"{frontend_url}/activate/{uid}/{token}"
+
+        # Send activation email
+        try:
+            send_mail(
+                'Verify your PlanClass account',
+                f'Hello {user.username},\n\nPlease click the following link to verify your account:\n{activation_link}\n\nThank you!',
+                os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@planclass.com'),
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            # If email fails, you might want to delete the user or log the error
+            user.delete()
+            return Response({'error': f'Failed to send verification email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'message': 'Registration successful. Please check your email to verify your account.'}, status=status.HTTP_201_CREATED)
+
+class ActivateAccountView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            return Response({'message': 'Account activated successfully.'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Activation link is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]

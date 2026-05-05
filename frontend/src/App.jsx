@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Activate from './pages/Activate';
 import Home from './pages/Home';
 import Resources from './pages/Resources';
 
@@ -41,6 +42,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/activate/:uid/:token" element={<Activate />} />
         
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
