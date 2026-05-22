@@ -8,19 +8,22 @@ https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
 """
 
 import os
-
-from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
-import scheduling.routing
+import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ClassScheduling.settings')
+django.setup()
+
+# Import AFTER django.setup() so all apps are ready
+from django.core.asgi import get_asgi_application
+from channels.routing import ProtocolTypeRouter, URLRouter
+from scheduling.token_auth import JWTAuthMiddlewareStack
+import scheduling.routing
 
 django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": AuthMiddlewareStack(
+    "websocket": JWTAuthMiddlewareStack(
         URLRouter(
             scheduling.routing.websocket_urlpatterns
         )

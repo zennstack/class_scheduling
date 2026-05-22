@@ -70,33 +70,49 @@ def schedule_saved(sender, instance, created, **kwargs):
                 _syncing = False
 
     channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
     action = "added" if created else "updated"
     room_name = instance.room.name if instance.room else "Online"
-    message = f"Schedule {action}: {instance.course.code} in {room_name} on {instance.day_of_week}"
-    
+    message = f"Schedule {action}: {instance.course.code} in {room_name} on {instance.day_of_week} ({instance.start_time.strftime('%I:%M %p')} - {instance.end_time.strftime('%I:%M %p')})"
+
     async_to_sync(channel_layer.group_send)(
         "notifications",
         {
             "type": "schedule_notification",
             "message": message,
             "action": action,
-            "schedule_id": instance.id
+            "schedule_id": instance.id,
+            "course": instance.course.code,
+            "day": instance.get_day_of_week_display(),
+            "start_time": instance.start_time.strftime('%I:%M %p'),
+            "end_time": instance.end_time.strftime('%I:%M %p'),
+            "room": room_name,
+            "section": instance.section,
         }
     )
 
 @receiver(post_delete, sender=ClassSchedule)
 def schedule_deleted(sender, instance, **kwargs):
     channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
     room_name = instance.room.name if instance.room else "Online"
-    message = f"Schedule deleted: {instance.course.code} in {room_name} on {instance.day_of_week}"
-    
+    message = f"Schedule deleted: {instance.course.code} in {room_name} on {instance.day_of_week} ({instance.start_time.strftime('%I:%M %p')} - {instance.end_time.strftime('%I:%M %p')})"
+
     async_to_sync(channel_layer.group_send)(
         "notifications",
         {
             "type": "schedule_notification",
             "message": message,
             "action": "deleted",
-            "schedule_id": instance.id
+            "schedule_id": instance.id,
+            "course": instance.course.code,
+            "day": instance.get_day_of_week_display(),
+            "start_time": instance.start_time.strftime('%I:%M %p'),
+            "end_time": instance.end_time.strftime('%I:%M %p'),
+            "room": room_name,
+            "section": instance.section,
         }
     )
 

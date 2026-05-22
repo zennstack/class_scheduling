@@ -7,10 +7,18 @@ export const getBaseURL = () => {
 
 // Get WebSocket URL based on env fallback
 export const getWebSocketURL = () => {
-  return import.meta.env.VITE_API_URL 
-    ? import.meta.env.VITE_API_URL.replace('http', 'ws').replace('/api/', '/') + 'ws/notifications/'
-    : 'ws://localhost:8000/ws/notifications/';
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    // Replace http:// with ws:// and https:// with wss://
+    const wsBase = apiUrl
+      .replace(/^https:\/\//, 'wss://')
+      .replace(/^http:\/\//, 'ws://')
+      .replace(/\/api\/?$/, '');
+    return `${wsBase}/ws/notifications/`;
+  }
+  return 'ws://localhost:8000/ws/notifications/';
 };
+
 
 const api = axios.create({
   baseURL: getBaseURL(),

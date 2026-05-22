@@ -38,14 +38,36 @@ export default function App() {
 
   React.useEffect(() => {
     if (lastMessage && lastMessage.type === 'schedule_notification') {
-      const message = lastMessage.message;
-      if (lastMessage.action === 'deleted') {
-        toast.error(message, { style: { borderRadius: '10px', background: '#333', color: '#fff' } });
+      const { action, course, day, start_time, end_time, room, section, message } = lastMessage;
+
+      // Build a rich notification message
+      let richMessage = message;
+      if (course && day) {
+        const timeRange = start_time && end_time ? ` · ${start_time}–${end_time}` : '';
+        const roomInfo = room ? ` · ${room}` : '';
+        const sectionInfo = section ? ` [${section}]` : '';
+        richMessage = `${course}${sectionInfo} — ${day}${timeRange}${roomInfo}`;
+      }
+
+      const toastStyle = {
+        borderRadius: '10px',
+        background: '#1e1e2e',
+        color: '#cdd6f4',
+        border: '1px solid rgba(205,214,244,0.15)',
+        fontSize: '0.875rem',
+        maxWidth: '380px',
+      };
+
+      if (action === 'deleted') {
+        toast.error(`🗑 Deleted: ${richMessage}`, { style: toastStyle, duration: 6000 });
+      } else if (action === 'added') {
+        toast.success(`📅 New Schedule: ${richMessage}`, { style: toastStyle, duration: 6000 });
       } else {
-        toast.success(message, { style: { borderRadius: '10px', background: '#333', color: '#fff' } });
+        toast(`✏️ Updated: ${richMessage}`, { style: toastStyle, duration: 6000, icon: '🔔' });
       }
     }
   }, [lastMessage]);
+
 
   React.useEffect(() => {
     const theme = localStorage.getItem('theme');

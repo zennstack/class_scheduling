@@ -3,7 +3,7 @@ services:
     name: class-scheduling-backend
     runtime: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn ClassScheduling.wsgi:application"
+    startCommand: "daphne -b 0.0.0.0 -p $PORT ClassScheduling.asgi:application"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -17,6 +17,11 @@ services:
         fromDatabase:
           name: class-scheduling-db
           property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: class-scheduling-redis
+          type: redis
+          property: connectionString
       - key: BREVO_API_KEY
         sync: false
       - key: BREVO_SENDER_EMAIL
@@ -28,3 +33,9 @@ services:
 databases:
   - name: class-scheduling-db
     plan: free
+
+services:
+  - type: redis
+    name: class-scheduling-redis
+    plan: free
+    maxmemoryPolicy: noeviction
