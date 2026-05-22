@@ -1,17 +1,40 @@
 from rest_framework import serializers
-from .models import Room, Instructor, Course, ClassSchedule
+from .models import Room, Instructor, Course, ClassSchedule, Student, Section
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError as DjangoValidationError
 
+
 class UserSerializer(serializers.ModelSerializer):
+    is_email_verified = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'is_staff']
+        fields = ['id', 'username', 'email', 'is_staff', 'is_email_verified']
+
+    def get_is_email_verified(self, obj):
+        if hasattr(obj, 'profile'):
+            return obj.profile.is_email_verified
+        return False
 
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
         fields = '__all__'
+
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = ['id', 'student_id', 'name', 'email']
+
+class SectionSerializer(serializers.ModelSerializer):
+    student_details = StudentSerializer(source='students', many=True, read_only=True)
+    students = serializers.PrimaryKeyRelatedField(
+        queryset=Student.objects.all(), many=True, required=False
+    )
+
+    class Meta:
+        model = Section
+        fields = ['id', 'name', 'students', 'student_details']
 
 class InstructorSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
@@ -36,6 +59,7 @@ class ClassScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSchedule
         fields = '__all__'
+        read_only_fields = ['students']
 
     def validate(self, data):
         # We can run the model's clean method here to trigger our custom validation
@@ -60,4 +84,5 @@ class ClassScheduleSerializer(serializers.ModelSerializer):
         representation['room'] = RoomSerializer(instance.room).data
         representation['instructor'] = InstructorSerializer(instance.instructor).data
         representation['course'] = CourseSerializer(instance.course).data
+        representation['students'] = StudentSerializer(instance.students.all(), many=True).data
         return representation

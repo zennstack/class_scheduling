@@ -7,7 +7,8 @@ from rest_framework_simplejwt.views import (
 from .views import (
     RegisterView, LogoutView, ProfileView, ChangePasswordView,
     UserViewSet, RoomViewSet, InstructorViewSet, 
-    CourseViewSet, ClassScheduleViewSet, HealthCheckView, CreateFirstAdminView
+    CourseViewSet, ClassScheduleViewSet, HealthCheckView, CreateFirstAdminView, VerifyEmailView,
+    SectionViewSet, StudentViewSet
 )
 
 router = DefaultRouter()
@@ -16,6 +17,9 @@ router.register(r'rooms', RoomViewSet)
 router.register(r'instructors', InstructorViewSet)
 router.register(r'courses', CourseViewSet)
 router.register(r'schedules', ClassScheduleViewSet)
+router.register(r'sections', SectionViewSet)
+router.register(r'students', StudentViewSet)
+
 
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
@@ -26,4 +30,6 @@ urlpatterns = [
     path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('', include(router.urls)),
     path('setup-admin/', CreateFirstAdminView.as_view(), name='setup-admin'),
-    path('health/', HealthCheckView.as_view(), name='health'),]
+    path('health/', HealthCheckView.as_view(), name='health'),
+    path('auth/verify-email/<str:token>/', VerifyEmailView.as_view(), name='verify-email'),
+]

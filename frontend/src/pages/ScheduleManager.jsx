@@ -7,7 +7,7 @@ import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { Calendar, Clock, MapPin, User, Book, Edit3, Search, LayoutGrid, List, Info, Plus } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Book, Edit3, Search, LayoutGrid, List, Info, Plus, Trash2, Users } from 'lucide-react';
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -15,6 +15,7 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 export default function ScheduleManager() {
   const [schedules, setSchedules] = useState([]);
   const [resources, setResources] = useState({ rooms: [], instructors: [], courses: [] });
+  const [sections, setSections] = useState([]);
   const [isStaff, setIsStaff] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' | 'edit'
@@ -24,13 +25,23 @@ export default function ScheduleManager() {
     instructor: '',
     day_of_week: 'MON',
     start_time: '08:00',
-    end_time: '09:00'
+    end_time: '09:00',
+    class_type: 'LECTURE',
+    section: 'IT3R1'
   });
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState('grid');
   const [calendarView, setCalendarView] = useState(window.innerWidth <= 768 ? 'day' : 'work_week');
+
+  // Student List Modal state
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+  const [selectedScheduleForStudents, setSelectedScheduleForStudents] = useState(null);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
+  const sectionsList = ['IT3R1', 'IT3R2', 'IT3R3', 'IT3R4', 'IT3R5', 'IT3R6', 'IT3R7', 'IT3R8', 'IT3R9', 'IT3R10'];
 
   useEffect(() => {
     fetchSchedules();
@@ -48,10 +59,15 @@ export default function ScheduleManager() {
 
   const fetchResources = async () => {
     try {
-      const [rooms, inst, courses, profileRes] = await Promise.all([
-        api.get('/rooms/'), api.get('/instructors/'), api.get('/courses/'), api.get('/auth/profile/')
+      const [rooms, inst, courses, sectionsRes, profileRes] = await Promise.all([
+        api.get('/rooms/'), 
+        api.get('/instructors/'), 
+        api.get('/courses/'), 
+        api.get('/sections/'),
+        api.get('/auth/profile/')
       ]);
       setResources({ rooms: rooms.data, instructors: inst.data, courses: courses.data });
+      setSections(sectionsRes.data);
       setIsStaff(profileRes.data.is_staff);
     } catch (err) {
       console.error("Failed to load resources", err);
@@ -61,7 +77,7 @@ export default function ScheduleManager() {
   const handleAddClick = () => {
     setModalMode('add');
     setEditingId(null);
-    setFormData({ course: '', room: '', instructor: '', day_of_week: 'MON', start_time: '08:00', end_time: '09:00' });
+    setFormData({ course: '', room: '', instructor: '', day_of_week: 'MON', start_time: '08:00', end_time: '09:00', class_type: 'LECTURE', section: 'IT3R1' });
     setError('');
     setIsModalOpen(true);
   };
@@ -71,11 +87,13 @@ export default function ScheduleManager() {
     setEditingId(sched.id);
     setFormData({
       course: sched.course.id,
-      room: sched.room.id,
+      room: sched.room ? sched.room.id : '',
       instructor: sched.instructor.id,
       day_of_week: sched.day_of_week,
       start_time: sched.start_time.slice(0, 5),
-      end_time: sched.end_time.slice(0, 5)
+      end_time: sched.end_time.slice(0, 5),
+      class_type: sched.class_type || 'LECTURE',
+      section: sched.section || 'IT3R1'
     });
     setError('');
     setIsModalOpen(true);
@@ -85,10 +103,15 @@ export default function ScheduleManager() {
     e.preventDefault();
     setError('');
     try {
+      const payload = { ...formData };
+      if (payload.class_type === 'ONLINE') {
+        payload.room = null;
+      }
+      
       if (modalMode === 'add') {
-        await api.post('/schedules/', formData);
+        await api.post('/schedules/', payload);
       } else {
-        await api.put(`/schedules/${editingId}/`, formData);
+        await api.put(`/schedules/${editingId}/`, payload);
       }
       setIsModalOpen(false);
       fetchSchedules();
@@ -103,9 +126,32 @@ export default function ScheduleManager() {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this schedule?")) {
+      try {
+        await api.delete(`/schedules/${id}/`);
+        fetchSchedules();
+      } catch (err) {
+        console.error("Failed to delete schedule", err);
+        alert("Failed to delete schedule.");
+      }
+    }
+  };
+
+  const filteredSchedules = schedules.filter(s => {
+    const matchesSearch = s.course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.section && s.section.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesSection = selectedSectionFilter === 'ALL' || s.section === selectedSectionFilter;
+    
+    return matchesSearch && matchesSection;
+  });
+
   // Calendar Event Mapping
   const dayMap = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 };
-  const events = schedules.map(s => {
+  const events = filteredSchedules.map(s => {
     const now = new Date();
     const currentDay = now.getDay();
     const targetDay = dayMap[s.day_of_week];
@@ -125,21 +171,15 @@ export default function ScheduleManager() {
 
     return {
       id: s.id,
-      title: s.course.name,
+      title: `${s.course.name} (${s.section || 'IT3R1'})`,
       start,
       end,
       resource: {
-        room: s.room.name,
+        room: s.class_type === 'ONLINE' ? 'Online' : (s.room ? s.room.name : 'TBA'),
         instructor: s.instructor.name
       }
     };
   });
-
-  const filteredSchedules = schedules.filter(s => 
-    s.course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.instructor.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const EventComponent = ({ event }) => (
     <div style={{ fontSize: '0.75rem', lineHeight: '1.2' }}>
@@ -182,49 +222,88 @@ export default function ScheduleManager() {
       </div>
 
       {/* TOP SECTION: Resource Management */}
-      <div className="card" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem' }}>
-        <Search className="text-muted" size={20} />
-        <input 
-          type="text" 
-          placeholder="Search by course, code, or instructor..." 
-          className="form-input" 
-          style={{ border: 'none', padding: '0.5rem', boxShadow: 'none' }}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="card filter-row">
+        <div className="filter-search-container">
+          <Search className="text-muted" size={20} />
+          <input 
+            type="text" 
+            placeholder="Search by course, code, section, or instructor..." 
+            className="form-input" 
+            style={{ border: 'none', padding: '0.5rem', boxShadow: 'none', margin: 0 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="filter-select-container">
+          <span className="text-muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Section:</span>
+          <select 
+            className="form-input" 
+            style={{ width: '130px', padding: '0.35rem 0.5rem', marginBottom: 0 }}
+            value={selectedSectionFilter}
+            onChange={(e) => setSelectedSectionFilter(e.target.value)}
+          >
+            <option value="ALL">All Sections</option>
+            {(sections.length > 0 ? sections.map(s => s.name) : sectionsList).map(sec => (
+              <option key={sec} value={sec}>{sec}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '3rem', paddingRight: '0.5rem' }}>
+      <div style={{ maxHeight: '420px', overflowY: 'auto', marginBottom: '3rem', paddingRight: '0.5rem' }}>
         {viewMode === 'grid' ? (
           <div className="grid-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
             {filteredSchedules.map((sched) => (
               <div key={sched.id} className="card stat-card" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '1.25rem', position: 'relative' }}>
                 {isStaff && (
-                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
-                    <button onClick={() => handleEditClick(sched)} className="btn-icon">
+                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => handleEditClick(sched)} className="btn-icon" title="Edit Schedule">
                       <Edit3 size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(sched.id)} className="btn-icon" style={{ color: '#ef4444' }} title="Delete Schedule">
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 )}
-                <div className="badge badge-primary" style={{ marginBottom: '0.75rem' }}>{sched.course.code}</div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <span className="badge badge-primary">{sched.course.code}</span>
+                  <span className="badge badge-success" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{sched.section || 'IT3R1'}</span>
+                </div>
                 <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', paddingRight: '2rem' }}>{sched.course.name}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', fontSize: '0.85rem' }}>
                   <div className="flex items-center gap-2 text-muted">
                     <User size={14} className="text-primary" /> {sched.instructor.name}
                   </div>
                   <div className="flex items-center gap-2 text-muted">
-                    <MapPin size={14} className="text-primary" /> Room: {sched.room.name}
+                    <MapPin size={14} className="text-primary" /> {sched.class_type === 'ONLINE' ? 'Online' : `Room: ${sched.room ? sched.room.name : 'TBA'}`}
+                  </div>
+                  <div className="flex items-center gap-2 text-muted" style={{ fontWeight: 500 }}>
+                    <Users size={14} className="text-primary" /> Enrolled: {sched.students?.length ?? 0} Students
                   </div>
                 </div>
-                {isStaff && (
+                <div style={{ display: 'flex', gap: '0.5rem', width: '100%', marginTop: '1.25rem' }}>
                   <button 
-                    onClick={() => handleEditClick(sched)}
+                    onClick={() => {
+                      setSelectedScheduleForStudents(sched);
+                      setStudentSearchTerm('');
+                      setIsStudentModalOpen(true);
+                    }}
                     className="btn btn-outline" 
-                    style={{ width: '100%', marginTop: '1.25rem', fontSize: '0.8rem', padding: '0.5rem' }}
+                    style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                   >
-                    Quick Reassign
+                    <Users size={14} /> View Students
                   </button>
-                )}
+                  {isStaff && (
+                    <button 
+                      onClick={() => handleEditClick(sched)}
+                      className="btn btn-primary" 
+                      style={{ fontSize: '0.8rem', padding: '0.5rem 0.75rem' }}
+                    >
+                      Reassign
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -234,10 +313,12 @@ export default function ScheduleManager() {
               <thead>
                 <tr>
                   <th>Course</th>
+                  <th>Section</th>
                   <th>Instructor</th>
                   <th>Location</th>
                   <th>Time Slot</th>
-                  {isStaff && <th style={{ textAlign: 'right' }}>Actions</th>}
+                  <th>Enrolled</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -247,16 +328,43 @@ export default function ScheduleManager() {
                       <div style={{ fontWeight: 600 }}>{sched.course.name}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sched.course.code}</div>
                     </td>
+                    <td>
+                      <span className="badge badge-success" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{sched.section || 'IT3R1'}</span>
+                    </td>
                     <td>{sched.instructor.name}</td>
-                    <td>{sched.room.name}</td>
+                    <td>{sched.class_type === 'ONLINE' ? <span className="badge badge-primary">Online</span> : (sched.room ? sched.room.name : 'TBA')}</td>
                     <td>{sched.day_of_week} {sched.start_time.slice(0, 5)}</td>
-                    {isStaff && (
-                      <td style={{ textAlign: 'right' }}>
-                        <button onClick={() => handleEditClick(sched)} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }}>
-                          Edit
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Users size={16} className="text-muted" />
+                        <span>{sched.students?.length ?? 0}</span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <button 
+                          onClick={() => {
+                            setSelectedScheduleForStudents(sched);
+                            setStudentSearchTerm('');
+                            setIsStudentModalOpen(true);
+                          }}
+                          className="btn btn-outline" 
+                          style={{ padding: '0.4rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        >
+                          <Users size={14} /> Students
                         </button>
-                      </td>
-                    )}
+                        {isStaff && (
+                          <>
+                            <button onClick={() => handleEditClick(sched)} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem' }}>
+                              Edit
+                            </button>
+                            <button onClick={() => handleDelete(sched.id)} className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', color: '#ef4444', borderColor: '#ef4444' }}>
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -340,21 +448,60 @@ export default function ScheduleManager() {
                   ))}
                 </select>
               </div>
-
               <div className="form-group">
-                <label className="form-label">Room</label>
+                <label className="form-label">Section</label>
                 <select 
                   className="form-input"
-                  value={formData.room}
-                  onChange={e => setFormData({...formData, room: e.target.value})}
+                  value={formData.section}
+                  onChange={e => setFormData({...formData, section: e.target.value})}
                   required
                 >
-                  <option value="">Select Room</option>
-                  {resources.rooms.map(rm => (
-                    <option key={rm.id} value={rm.id}>{rm.name} (Cap: {rm.capacity})</option>
+                  {(sections.length > 0 ? sections.map(s => s.name) : sectionsList).map(sec => (
+                    <option key={sec} value={sec}>{sec}</option>
                   ))}
                 </select>
               </div>
+              <div className="form-group">
+                <label className="form-label">Class Type</label>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input 
+                      type="radio" 
+                      name="class_type"
+                      value="LECTURE"
+                      checked={formData.class_type === 'LECTURE'}
+                      onChange={e => setFormData({...formData, class_type: e.target.value})}
+                    />
+                    Lecture (In-Person)
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input 
+                      type="radio" 
+                      name="class_type"
+                      value="ONLINE"
+                      checked={formData.class_type === 'ONLINE'}
+                      onChange={e => setFormData({...formData, class_type: e.target.value})}
+                    />
+                    Online
+                  </label>
+                </div>
+              </div>
+              {formData.class_type === 'LECTURE' && (
+                <div className="form-group">
+                  <label className="form-label">Room</label>
+                  <select 
+                    className="form-input"
+                    value={formData.room || ''}
+                    onChange={e => setFormData({...formData, room: e.target.value})}
+                    required={formData.class_type === 'LECTURE'}
+                  >
+                    <option value="">Select Room</option>
+                    {resources.rooms.map(rm => (
+                      <option key={rm.id} value={rm.id}>{rm.name} (Cap: {rm.capacity})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid-3" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -405,6 +552,92 @@ export default function ScheduleManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Student List Modal */}
+      {isStudentModalOpen && selectedScheduleForStudents && (
+        <div className="modal-overlay" onClick={() => setIsStudentModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: '600px', width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: '2rem' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Users className="text-primary" size={24} /> Enrolled Student List
+                </h2>
+                <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                  {selectedScheduleForStudents.course.name} ({selectedScheduleForStudents.course.code}) • Section: <strong>{selectedScheduleForStudents.section || 'IT3R1'}</strong>
+                </p>
+              </div>
+              <button className="modal-close" onClick={() => setIsStudentModalOpen(false)} style={{ fontSize: '2rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+            </div>
+
+            {/* Search Input for Students */}
+            <div className="form-group" style={{ marginTop: '1.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.25rem 0.75rem' }}>
+              <Search className="text-muted" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search students by name or ID..." 
+                className="form-input" 
+                style={{ border: 'none', padding: '0.5rem 0', boxShadow: 'none', flex: 1 }}
+                value={studentSearchTerm}
+                onChange={(e) => setStudentSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Student Count Badge */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+              <span className="text-muted">Officially Enrolled:</span>
+              <span className="badge badge-primary" style={{ fontWeight: 600 }}>{selectedScheduleForStudents.students?.length ?? 0} Students</span>
+            </div>
+
+            {/* Scrollable Student Table */}
+            <div style={{ flex: 1, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '12px', minHeight: '200px' }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1, borderBottom: '2px solid var(--border)' }}>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>ID</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Name</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Email</th>
+                    <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selectedScheduleForStudents.students || []).filter(student => 
+                    student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                    student.student_id.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                  ).length > 0 ? (
+                    (selectedScheduleForStudents.students || [])
+                      .filter(student => 
+                        student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+                        student.student_id.toLowerCase().includes(studentSearchTerm.toLowerCase())
+                      )
+                      .map(student => (
+                        <tr key={student.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>{student.student_id}</td>
+                          <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', fontWeight: 500 }}>{student.name}</td>
+                          <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{student.email}</td>
+                          <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
+                            <span className="badge badge-success" style={{ fontSize: '0.7rem', padding: '2px 8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '6px', fontWeight: 600 }}>Enrolled</span>
+                          </td>
+                        </tr>
+                      ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        No students found matching your search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-primary" onClick={() => setIsStudentModalOpen(false)} style={{ padding: '0.6rem 1.5rem' }}>
+                Close Directory
+              </button>
+            </div>
           </div>
         </div>
       )}

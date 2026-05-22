@@ -16,3 +16,5 @@ dj-database-url
 whitenoise
 psycopg2-binary
 python-dotenv
+sib-api-v3-sdk  
+ 

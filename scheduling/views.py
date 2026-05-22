@@ -1,16 +1,45 @@
+
+
+# Email verification view
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from .models import UserProfile
+from django.contrib.auth.models import User
+
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        try:
+            profile = UserProfile.objects.get(email_verification_token=token)
+            if profile.is_email_verified:
+                return Response({'message': 'Email already verified.'}, status=status.HTTP_200_OK)
+            profile.is_email_verified = True
+            # DO NOT set token to None here, so React Strict Mode double-firing works gracefully
+            # profile.email_verification_token = None
+            profile.save()
+            
+            user = profile.user
+            user.is_active = True
+            user.save()
+            return Response({'message': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Invalid or expired verification token.'}, status=status.HTTP_400_BAD_REQUEST)
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated, AllowAny, BasePermission, SAFE_METHODS, IsAdminUser
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Room, Instructor, Course, ClassSchedule
+from .models import Room, Instructor, Course, ClassSchedule, Student, Section
 from .serializers import (
     UserSerializer, RoomSerializer, InstructorSerializer, 
-    CourseSerializer, ClassScheduleSerializer
+    CourseSerializer, ClassScheduleSerializer, StudentSerializer, SectionSerializer
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
@@ -38,18 +67,35 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        from .models import UserProfile
+        from .email_utils import send_verification_email
+
         username = request.data.get('username')
         password = request.data.get('password')
         email = request.data.get('email', '')
 
-        if not username or not password:
-            return Response({'error': 'Username and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not username or not password or not email:
+            return Response({'error': 'Username, password and email are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Username already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(username=username, password=password, email=email)
-        return Response({'message': 'User registered successfully.', 'user': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
+        user.is_active = False
+        user.save()
+        
+        # Create user profile
+        profile = UserProfile.objects.create(user=user)
+        profile.generate_verification_token()
+        
+        # Send verification email
+        try:
+            send_verification_email(user, request)
+        except Exception as e:
+            user.delete()
+            return Response({'error': f'Email service unavailable: {str(e)}'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        return Response({'message': 'User registered successfully. Please check your email to verify your account.', 'user': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
 
 
 class LogoutView(APIView):
@@ -128,4 +174,14 @@ class ClassScheduleViewSet(viewsets.ModelViewSet):
             if hasattr(e, 'message_dict'):
                 raise ValidationError(e.message_dict)
             raise ValidationError({'error': list(e.messages)})
+
+class SectionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    queryset = Section.objects.all()
+    serializer_class = SectionSerializer
+
+class StudentViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
 

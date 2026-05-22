@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 
 export default function Register() {
@@ -7,12 +8,16 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [isRegistered, setIsRegistered] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
       await api.post('/auth/register/', { username, password, email });
+      toast.success('Registration successful! You can now log in.', {
+        style: { borderRadius: '10px', background: '#333', color: '#fff' }
+      });
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -33,8 +38,8 @@ export default function Register() {
             <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label className="form-label">Email (Optional)</label>
-            <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} />
+            <label className="form-label">Email</label>
+            <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <div className="form-group">
             <label className="form-label">Password</label>

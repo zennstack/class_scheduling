@@ -1,22 +1,35 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, CalendarDays, BookOpen, User, LogOut } from 'lucide-react';
+import { Home, CalendarDays, BookOpen, User, LogOut, Users } from 'lucide-react';
 import api from '../utils/api';
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const [isStaff, setIsStaff] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/auth/profile/');
+        setIsStaff(response.data.is_staff);
+      } catch (err) {
+        console.error('Failed to load user profile in sidebar', err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleLogout = async () => {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = sessionStorage.getItem('refresh_token');
       if (refreshToken) {
         await api.post('/auth/logout/', { refresh_token: refreshToken });
       }
     } catch (err) {
       console.error('Logout failed on server', err);
     } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      sessionStorage.removeItem('access_token');
+      sessionStorage.removeItem('refresh_token');
       navigate('/login');
     }
   };
@@ -25,10 +38,9 @@ export default function Sidebar() {
     { path: '/', icon: <Home size={20} />, label: 'Dashboard' },
     { path: '/manage', icon: <CalendarDays size={20} />, label: 'Scheduling Hub' },
     { path: '/resources', icon: <BookOpen size={20} />, label: 'Resources' },
+    ...(isStaff ? [{ path: '/sections', icon: <Users size={20} />, label: 'Sections' }] : []),
     { path: '/profile', icon: <User size={20} />, label: 'Profile' },
   ];
-
-
 
   return (
     <div className="sidebar">
@@ -41,14 +53,14 @@ export default function Sidebar() {
       
       <div className="sidebar-nav">
         {navItems.map((item) => (
-          <NavLink 
-            key={item.path} 
-            to={item.path} 
-            className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            <div className="nav-icon">{item.icon}</div>
-            <span className="nav-text">{item.label}</span>
-          </NavLink>
+            <NavLink 
+              key={item.path} 
+              to={item.path} 
+              className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}
+            >
+              <div className="nav-icon">{item.icon}</div>
+              <span className="nav-text">{item.label}</span>
+            </NavLink>
         ))}
       </div>
 

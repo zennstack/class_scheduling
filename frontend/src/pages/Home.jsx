@@ -123,9 +123,11 @@ export default function Home() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{item.course.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem' }}>
-                         <span className="flex items-center gap-1"><MapPin size={12} /> {item.room.name}</span>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.25rem' }}>
+                         <span className="flex items-center gap-1"><MapPin size={12} /> {item.room ? item.room.name : 'Online'}</span>
                          <span className="flex items-center gap-1"><Users size={12} /> {item.instructor.name}</span>
+                         <span className="badge badge-success" style={{ padding: '2px 6px', fontSize: '0.7rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{item.section || 'IT3R1'}</span>
+                         <span className="flex items-center gap-1" style={{ color: 'var(--primary)', fontWeight: 500 }}><Users size={12} /> {item.students?.length || 40} Enrolled</span>
                       </div>
                     </div>
                     <ChevronRight className="text-muted" size={20} />
@@ -157,12 +159,15 @@ export default function Home() {
                   {recentSchedules.map((s) => (
                     <tr key={s.id}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{s.course.code}</div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 600 }}>{s.course.code}</span>
+                          <span className="badge badge-success" style={{ padding: '2px 6px', fontSize: '0.65rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>{s.section || 'IT3R1'}</span>
+                        </div>
                         <div style={{ fontSize: '0.75rem' }} className="text-muted">{s.course.name}</div>
                       </td>
                       <td>
-                        <div style={{ fontSize: '0.85rem' }}>{s.instructor.name} in {s.room.name}</div>
-                        <div style={{ fontSize: '0.75rem' }} className="text-muted">{s.day_of_week} at {s.start_time.slice(0, 5)}</div>
+                        <div style={{ fontSize: '0.85rem' }}>{s.instructor.name} in {s.room ? s.room.name : 'Online'}</div>
+                        <div style={{ fontSize: '0.75rem' }} className="text-muted">{s.day_of_week} at {s.start_time.slice(0, 5)} • {s.students?.length || 40} Enrolled</div>
                       </td>
                       <td><span className="badge badge-success">Active</span></td>
                     </tr>

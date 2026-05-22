@@ -35,9 +35,9 @@ export default function CalendarView() {
         const dayMap = { 'SUN': 0, 'MON': 1, 'TUE': 2, 'WED': 3, 'THU': 4, 'FRI': 5, 'SAT': 6 };
         
         const calendarEvents = sched.data.map(s => {
-          const course = crs.data.find(c => c.id === s.course) || {};
-          const room = rm.data.find(r => r.id === s.room) || {};
-          const instObj = inst.data.find(i => i.id === s.instructor) || {};
+          const course = s.course || {};
+          const room = s.room || {};
+          const instObj = s.instructor || {};
 
           const now = new Date();
           const currentDay = now.getDay();
@@ -57,12 +57,12 @@ export default function CalendarView() {
           end.setHours(parseInt(endH), parseInt(endM), 0);
 
           return {
-            title: course.name || 'Class',
+            title: `${course.name || 'Class'} (${s.section || 'IT3R1'})`,
             start,
             end,
             resource: {
               code: course.code,
-              room: room.name,
+              room: s.class_type === 'ONLINE' ? 'Online' : (room.name || 'TBA'),
               instructor: instObj.name
             }
           };

@@ -4,27 +4,27 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import api from '../utils/api';
 
 export default function Activate() {
-  const { uid, token } = useParams();
+  const { token } = useParams();
   const [status, setStatus] = useState('verifying');
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     const verify = async () => {
       try {
-        await api.post(`/auth/activate/${uid}/${token}/`);
+        await api.get(`/auth/verify-email/${token}/`);
         setStatus('success');
       } catch (err) {
         setStatus('error');
         setErrorMsg(err.response?.data?.error || 'Invalid or expired link.');
       }
     };
-    if (uid && token) {
+    if (token) {
       verify();
     } else {
       setStatus('error');
       setErrorMsg('Invalid activation link.');
     }
-  }, [uid, token]);
+  }, [token]);
 
   return (
     <div className="auth-container">

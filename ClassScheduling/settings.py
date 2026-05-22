@@ -25,6 +25,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -70,7 +71,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ClassScheduling.wsgi.application'
+ASGI_APPLICATION = 'ClassScheduling.asgi.application'
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
